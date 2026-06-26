@@ -11,7 +11,7 @@ class AuthController extends Controller
     public function showLogin()
     {
         if (Auth::check()) {
-            // 🎯 FIXED: Redirect already logged-in users to the dashboard instead of patients
+            
             return redirect()->route('admin.dashboard');
         }
         return view('auth.login');
@@ -29,7 +29,7 @@ class AuthController extends Controller
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
 
-            // 🎯 FIXED: Redirect successful logins to the safe dashboard route
+           
             return redirect()->route('admin.dashboard');
         }
 

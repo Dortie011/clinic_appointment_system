@@ -69,8 +69,6 @@ class UserController extends Controller
             'role'      => 'required|in:Admin,Receptionist,Doctor',
             'email'     => 'nullable|email|max:100|unique:users,email,' . $user->user_id . ',user_id',
             'password'  => 'nullable|string|min:6',
-            // Only require doctor_id if they are changing a non-doctor to a doctor. 
-            // If they are already a doctor, keep their existing doctor_id.
             'doctor_id' => 'nullable|required_if:role,Doctor|exists:doctors,doctor_id',
         ]);
 
