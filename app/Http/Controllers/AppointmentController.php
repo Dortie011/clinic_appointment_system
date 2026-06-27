@@ -39,12 +39,11 @@ class AppointmentController extends Controller
             $patients = Patient::orderBy('last_name', 'asc')->get();
             
             $today = \Carbon\Carbon::today()->toDateString();
-            $tomorrow = \Carbon\Carbon::tomorrow()->toDateString();
 
-            // 1. Fetch the unbooked schedules for today/tomorrow
+            // 1. Fetch the unbooked schedules from today onwards
             $availableSchedules = Schedule::with('doctor')
                 ->whereIn('availability_status', ['Available', 'available'])
-                ->whereBetween('availability_date', [$today, $tomorrow])
+                ->where('availability_date', '>=', $today)
                 ->whereDoesntHave('appointment')
                 ->orderBy('availability_date', 'asc')
                 ->orderBy('start_time', 'asc')
