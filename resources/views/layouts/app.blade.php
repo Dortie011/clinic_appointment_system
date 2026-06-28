@@ -39,7 +39,7 @@
             <a href="{{ route('admin.doctors') }}" class="px-4 py-2 text-sm font-medium rounded-t {{ $route == 'admin.doctors' ? 'bg-gray-100 border-b-2 border-blue-500 text-blue-600' : 'text-gray-600 hover:text-blue-500' }}">Doctors</a>
         @endif
 
-        @if(in_array(auth()->user()->role, ['Admin', 'Doctor']))
+        @if(in_array(auth()->user()->role, ['Admin', 'Receptionist', 'Doctor']))
             <a href="{{ route('admin.schedules') }}" class="px-4 py-2 text-sm font-medium rounded-t {{ $route == 'admin.schedules' ? 'bg-gray-100 border-b-2 border-blue-500 text-blue-600' : 'text-gray-600 hover:text-blue-500' }}">Schedules</a>
         @endif
 

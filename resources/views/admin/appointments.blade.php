@@ -142,10 +142,12 @@
                     <label class="block text-xs font-bold uppercase text-gray-700 mb-1">Reason for Visit</label>
                     <input type="text" name="reason_for_visit" required class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
                 </div>
-                <div>
-                    <label class="block text-xs font-bold uppercase text-gray-700 mb-1">Clinical Notes (Optional)</label>
-                    <textarea name="notes" rows="2" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
-                </div>
+                @if(in_array(auth()->user()->role, ['Admin', 'Doctor']))
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-gray-700 mb-1">Clinical Notes (Optional)</label>
+                        <textarea name="notes" rows="2" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+                    </div>
+                @endif
                 <div class="flex justify-end space-x-2 pt-4 border-t border-gray-100">
                     <button type="button" onclick="toggleModal('addAppointmentModal')" class="bg-gray-100 text-gray-700 px-4 py-2 text-sm font-medium rounded">Cancel</button>
                     <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm font-medium rounded shadow-sm">Save Booking</button>
@@ -173,18 +175,19 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Doctor (Locked)</label>
-                        <select id="edit_doctor_id" disabled class="w-full border border-gray-200 rounded px-3 py-2 text-sm bg-gray-100 text-gray-500 cursor-not-allowed appearance-none">
-                            @foreach($doctors as $doc)
-                                <option value="{{ $doc->doctor_id }}">Dr. {{ $doc->first_name }} {{ $doc->last_name }}</option>
-                            @endforeach
+                        <label class="block text-xs font-bold uppercase text-gray-700 mb-1">Doctor</label>
+                        <select id="edit_doctor_id" name="doctor_id" required onchange="loadDoctorSchedules()" class="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <!-- Will be populated dynamically -->
                         </select>
+                        <input type="hidden" id="edit_doctor_id_hidden" name="doctor_id" disabled>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Schedule Block ID</label>
-                        <input type="text" id="edit_schedule_id" class="w-full border border-gray-200 rounded px-3 py-2 text-sm bg-gray-100 text-gray-500 cursor-not-allowed" readonly>
+                        <label class="block text-xs font-bold uppercase text-gray-700 mb-1">Available Schedule</label>
+                        <select id="edit_schedule_id" name="schedule_id" required class="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <!-- Will be populated dynamically -->
+                        </select>
                     </div>
                     <div>
                         <label class="block text-xs font-bold uppercase text-gray-700 mb-1">Status</label>
@@ -194,16 +197,24 @@
                             <option value="Cancelled">Cancelled</option>
                             <option value="No Show">No Show</option>
                         </select>
+                        <input type="hidden" id="edit_status_hidden" name="status" disabled>
                     </div>
                 </div>
                 <div>
                     <label class="block text-xs font-bold uppercase text-gray-700 mb-1">Reason for Visit</label>
                     <input type="text" id="edit_reason_for_visit" name="reason_for_visit" required class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
                 </div>
-                <div>
-                    <label class="block text-xs font-bold uppercase text-gray-700 mb-1">Clinical Notes</label>
-                    <textarea id="edit_notes" name="notes" rows="2" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
-                </div>
+                @if(auth()->user()->role === 'Doctor')
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-gray-700 mb-1">Clinical Notes</label>
+                        <textarea id="edit_notes" name="notes" rows="2" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+                    </div>
+                @elseif(auth()->user()->role === 'Admin')
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Clinical Notes (Read-Only)</label>
+                        <textarea id="edit_notes" name="notes" rows="2" readonly class="w-full border border-gray-200 rounded px-3 py-2 text-sm bg-gray-50 text-gray-500 cursor-not-allowed focus:outline-none"></textarea>
+                    </div>
+                @endif
                 <div class="flex justify-end space-x-2 pt-4 border-t border-gray-100">
                     <button type="button" onclick="toggleModal('editAppointmentModal')" class="bg-gray-100 text-gray-700 px-4 py-2 text-sm font-medium rounded">Cancel</button>
                     <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm font-medium rounded shadow-sm">Update Appointment</button>
@@ -282,21 +293,116 @@
             toggleModal('deleteAppointmentModal');
         }
 
+        let currentAppointmentDoctorId = null;
+        let currentAppointmentScheduleId = null;
+
+        function loadDoctorSchedules(selectCurrent = false) {
+            const doctorSelect = document.getElementById('edit_doctor_id');
+            const doctorId = doctorSelect.value;
+            const scheduleSelect = document.getElementById('edit_schedule_id');
+            
+            scheduleSelect.innerHTML = '<option value="">-- Loading schedules... --</option>';
+            scheduleSelect.disabled = true;
+
+            if (!doctorId) {
+                scheduleSelect.innerHTML = '<option value="">-- Select a doctor first --</option>';
+                return;
+            }
+
+            let url = `/admin/doctors/${doctorId}/available-schedules`;
+            if (doctorId == currentAppointmentDoctorId && currentAppointmentScheduleId) {
+                url += `?include_schedule_id=${currentAppointmentScheduleId}`;
+            }
+
+            fetch(url)
+                .then(res => res.json())
+                .then(schedules => {
+                    scheduleSelect.innerHTML = '';
+                    if (schedules.length === 0) {
+                        scheduleSelect.innerHTML = '<option value="">No available schedules found.</option>';
+                        scheduleSelect.disabled = true;
+                    } else {
+                        schedules.forEach(sched => {
+                            const option = document.createElement('option');
+                            option.value = sched.schedule_id;
+                            option.textContent = sched.formatted_schedule;
+                            scheduleSelect.appendChild(option);
+                        });
+                        scheduleSelect.disabled = false;
+                        
+                        if (selectCurrent && doctorId == currentAppointmentDoctorId && currentAppointmentScheduleId) {
+                            scheduleSelect.value = currentAppointmentScheduleId;
+                        }
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    scheduleSelect.innerHTML = '<option value="">Error loading schedules.</option>';
+                });
+        }
+
         function openEditModal() {
             if (!selectedAppointmentId) return;
 
             fetch(`/admin/appointments/${selectedAppointmentId}/edit`)
                 .then(response => response.json())
                 .then(data => {
-                    document.getElementById('edit_patient_id').value = data.patient_id;
-                    document.getElementById('edit_doctor_id').value = data.doctor_id;
-                    document.getElementById('edit_schedule_id').value = data.schedule_id;
-                    document.getElementById('edit_status').value = data.status;
-                    document.getElementById('edit_reason_for_visit').value = data.reason_for_visit;
-                    document.getElementById('edit_notes').value = data.notes ?? '';
+                    currentAppointmentDoctorId = data.doctor_id;
+                    currentAppointmentScheduleId = data.schedule_id;
 
-                    document.getElementById('editAppointmentForm').action = `/admin/appointments/${selectedAppointmentId}/update`;
-                    toggleModal('editAppointmentModal');
+                    document.getElementById('edit_patient_id').value = data.patient_id;
+                    document.getElementById('edit_reason_for_visit').value = data.reason_for_visit;
+                    
+                    const statusSelect = document.getElementById('edit_status');
+                    statusSelect.value = data.status;
+
+                    const currentUserRole = "{{ auth()->user()->role }}";
+                    if (currentUserRole === 'Receptionist') {
+                        statusSelect.disabled = true;
+                        statusSelect.classList.add('bg-gray-100', 'text-gray-500', 'cursor-not-allowed');
+                        document.getElementById('edit_status_hidden').value = data.status;
+                        document.getElementById('edit_status_hidden').disabled = false;
+                    } else {
+                        statusSelect.disabled = false;
+                        statusSelect.classList.remove('bg-gray-100', 'text-gray-500', 'cursor-not-allowed');
+                        document.getElementById('edit_status_hidden').disabled = true;
+                    }
+                    
+                    const notesField = document.getElementById('edit_notes');
+                    if (notesField) {
+                        notesField.value = data.notes ?? '';
+                    }
+
+                    fetch(`/admin/active-doctors?include_doctor_id=${data.doctor_id}`)
+                        .then(res => res.json())
+                        .then(doctors => {
+                            const doctorSelect = document.getElementById('edit_doctor_id');
+                            doctorSelect.innerHTML = '';
+                            doctors.forEach(doc => {
+                                const option = document.createElement('option');
+                                option.value = doc.doctor_id;
+                                option.textContent = `Dr. ${doc.first_name} ${doc.last_name}`;
+                                doctorSelect.appendChild(option);
+                            });
+                            doctorSelect.value = data.doctor_id;
+
+                            const userRole = "{{ auth()->user()->role }}";
+                            if (userRole === 'Doctor') {
+                                doctorSelect.disabled = true;
+                                doctorSelect.classList.add('bg-gray-100', 'text-gray-500', 'cursor-not-allowed');
+                                document.getElementById('edit_doctor_id_hidden').value = data.doctor_id;
+                                document.getElementById('edit_doctor_id_hidden').disabled = false;
+                            } else {
+                                doctorSelect.disabled = false;
+                                doctorSelect.classList.remove('bg-gray-100', 'text-gray-500', 'cursor-not-allowed');
+                                document.getElementById('edit_doctor_id_hidden').disabled = true;
+                            }
+
+                            loadDoctorSchedules(true);
+
+                            document.getElementById('editAppointmentForm').action = `/admin/appointments/${selectedAppointmentId}/update`;
+                            toggleModal('editAppointmentModal');
+                        });
                 });
         }
     </script>

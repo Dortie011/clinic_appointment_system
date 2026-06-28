@@ -47,15 +47,18 @@ Route::middleware('auth')->prefix('admin')->group(function () {
         Route::get('/appointments', [AppointmentController::class, 'index'])->name('admin.appointments');
         Route::get('/appointments/{id}/edit', [AppointmentController::class, 'edit'])->name('admin.appointments.edit');
         Route::put('/appointments/{id}/update', [AppointmentController::class, 'update'])->name('admin.appointments.update');
+        Route::get('/active-doctors', [AppointmentController::class, 'getActiveDoctors'])->name('admin.active-doctors');
+        Route::get('/doctors/{id}/available-schedules', [AppointmentController::class, 'getDoctorSchedules'])->name('admin.doctors.available-schedules');
+        Route::get('/schedules', [ScheduleController::class, 'index'])->name('admin.schedules');
     });
 
     // 🟢 SHARED ACCESSIBILITY: Admin & Doctor
     Route::middleware('role:Admin,Doctor')->group(function () {
         // Schedules Workflow
-        Route::get('/schedules', [ScheduleController::class, 'index'])->name('admin.schedules');
         Route::post('/schedules/store', [ScheduleController::class, 'store'])->name('admin.schedules.store');
         Route::get('/schedules/{id}/edit', [ScheduleController::class, 'edit'])->name('admin.schedules.edit');
         Route::put('/schedules/{id}/update', [ScheduleController::class, 'update'])->name('admin.schedules.update');
+        Route::delete('/schedules/{id}/delete', [ScheduleController::class, 'destroy'])->name('admin.schedules.delete');
     });
 
     // 🔒 STRICT PRIVILEGES: Admin Only (System Settings & Accounts Management) 
@@ -66,9 +69,6 @@ Route::middleware('auth')->prefix('admin')->group(function () {
         Route::get('/doctors/{id}/edit', [DoctorController::class, 'edit'])->name('admin.doctors.edit');
         Route::put('/doctors/{id}/update', [DoctorController::class, 'update'])->name('admin.doctors.update');
         Route::delete('/doctors/{id}/delete', [DoctorController::class, 'destroy'])->name('admin.doctors.delete');
-
-        // Delete Schedule
-        Route::delete('/schedules/{id}/delete', [ScheduleController::class, 'destroy'])->name('admin.schedules.delete');
 
         // Hard Deletions (Patients & Appointments) 
         Route::delete('/patients/{id}/delete', [PatientController::class, 'destroy'])->name('admin.patients.delete');

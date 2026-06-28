@@ -125,11 +125,13 @@ class ScheduleController extends Controller
 
     public function destroy($id)
     {
-        if (auth()->user()->role !== 'Admin') {
-            return redirect()->route('admin.schedules')->withErrors(['unauthorized' => 'Only administrators are authorized to remove schedules.']);
+        $schedule = Schedule::findOrFail($id);
+        $user = auth()->user();
+
+        if ($user->role !== 'Admin' && ($user->role !== 'Doctor' || $schedule->doctor_id !== $user->doctor_id)) {
+            return redirect()->route('admin.schedules')->withErrors(['unauthorized' => 'You are not authorized to delete this schedule.']);
         }
 
-        $schedule = Schedule::findOrFail($id);
         $schedule->delete();
         return redirect()->route('admin.schedules')->with('success', 'Schedule shift deleted successfully!');
     }

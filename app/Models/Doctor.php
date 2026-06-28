@@ -37,4 +37,12 @@ class Doctor extends Model
     {
         return $this->hasOne(User::class, 'doctor_id', 'doctor_id');
     }
+
+    /**
+     * Get all schedules for this doctor.
+     */
+    public function schedules()
+    {
+        return $this->hasMany(Schedule::class, 'doctor_id', 'doctor_id');
+    }
 }
