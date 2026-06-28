@@ -169,6 +169,7 @@
                             <option value="Receptionist">Receptionist</option>
                             <option value="Doctor">Doctor</option>
                         </select>
+                        <input type="hidden" id="edit_role_hidden" name="role" disabled>
                     </div>
                     <div>
                         <label class="block text-xs font-bold uppercase text-gray-700 mb-1">Email Address</label>
@@ -184,6 +185,7 @@
                         @endforeach
                     </select>
                 </div>
+                <input type="hidden" id="edit_doctor_id_hidden" name="doctor_id" disabled>
                 <div class="flex justify-end space-x-2 pt-4 border-t border-gray-100">
                     <button type="button" onclick="toggleModal('editUserModal')" class="bg-gray-100 text-gray-700 px-4 py-2 text-sm font-medium rounded">Cancel</button>
                     <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm font-medium rounded shadow-sm">Update User</button>
@@ -253,15 +255,28 @@
                     document.getElementById('edit_username').value = user.username;
                     document.getElementById('edit_email').value = user.email ?? '';
                     document.getElementById('edit_role').value = user.role;
+                    document.getElementById('edit_doctor_id').value = user.doctor_id ?? '';
                     
                     // If user being edited is already a Doctor, lock/hide the fields
                     if(user.role === 'Doctor') {
                         document.getElementById('edit_role').disabled = true;
                         document.getElementById('edit_role').classList.add('bg-gray-100', 'cursor-not-allowed');
+                        document.getElementById('edit_role_hidden').value = 'Doctor';
+                        document.getElementById('edit_role_hidden').disabled = false;
+                        
+                        document.getElementById('edit_doctor_id').disabled = true;
+                        document.getElementById('edit_doctor_id_hidden').value = user.doctor_id;
+                        document.getElementById('edit_doctor_id_hidden').disabled = false;
+                        
                         document.getElementById('edit_doctor_wrapper').classList.add('hidden');
                     } else {
                         document.getElementById('edit_role').disabled = false;
                         document.getElementById('edit_role').classList.remove('bg-gray-100', 'cursor-not-allowed');
+                        document.getElementById('edit_role_hidden').disabled = true;
+                        
+                        document.getElementById('edit_doctor_id').disabled = false;
+                        document.getElementById('edit_doctor_id_hidden').disabled = true;
+                        
                         toggleDoctorDropdown('edit');
                     }
 
